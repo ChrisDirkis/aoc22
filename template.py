@@ -8,7 +8,7 @@ from grid import *
 
 digit_re = re.compile(r"(\d+)")
 
-aod_day = str(int(__file__.split("/")[-1][-5:-3]))
+aod_day = __file__.split("/")[-1][-5:-3]
 data_file_name = "inputs/" + aod_day
 testing_file_name = data_file_name + "t"
 
@@ -16,12 +16,14 @@ def part_1(filename):
     print(f"Part 1: {filename}")
     with open(filename) as file:
         lines = [digit_re.findall(line) for line in file]
+        l_f = [l[0] for l in lines]
         pass
 
 def part_2(filename):
     print(f"Part 2: {filename}")
     with open(filename) as file:
         lines = [digit_re.findall(line) for line in file]
+        l_f = [l[0] for l in lines]
         pass
 
 if __name__ == "__main__":

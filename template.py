@@ -15,15 +15,12 @@ testing_file_name = data_file_name + "t"
 def part_1(filename):
     print(f"Part 1: {filename}")
     with open(filename) as file:
-        lines = [digit_re.findall(line) for line in file]
-        l_f = [l[0] for l in lines]
+        lines = [[int(d) for d in digit_re.findall(line)] for line in file]
         pass
 
 def part_2(filename):
     print(f"Part 2: {filename}")
     with open(filename) as file:
-        lines = [digit_re.findall(line) for line in file]
-        l_f = [l[0] for l in lines]
         pass
 
 if __name__ == "__main__":

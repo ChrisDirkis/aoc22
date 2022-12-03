@@ -1,6 +1,9 @@
-from itertools import permutations, chain, product
+from functools import lru_cache
+from itertools import product
 from collections import namedtuple
 from math import sqrt, prod
+import heapq
+import types
 
 vec2 = namedtuple('vec2', ['x', 'y'])
 vec3 = namedtuple('vec3', ['x', 'y', 'z'])
@@ -24,50 +27,162 @@ def sub_t(a, b):
 def dot_t(a, b):
     return to_vec(tuple(prod(v) for v in zip(a, b)))
 
-def in_grid(addr, dims):
+def in_dims(addr, dims):
     return all(v >= 0 and v < dims[i] for i, v in enumerate(addr))
+
+def in_grid(addr, grid):
+    return addr in grid
 
 def all_addrs(dims):
     return (to_vec(v) for v in product(*(list(range(v) for v in dims))))
 
-def index_into(grid, addr):
-    arr = grid
-    for v in reversed(addr):
-        arr = arr[v]
-    return arr
+def find_addrs(grid, predicate):
+    if isinstance(predicate, types.LambdaType) or isinstance(predicate, types.FunctionType):
+        return (addr for addr in grid.keys if predicate(grid[addr]))
+    return (addr for addr in grid.keys if grid[addr] == predicate)
 
-def find_addrs_v(grid, dims, value):
-    return (addr for addr in all_addrs(dims) if index_into(grid, addr) == value)
+def gen_grid(dims, initial_value = None):
+    addrs = list(all_addrs(dims))
+    return dict(zip(addrs, [initial_value] * len(addrs)))
 
-def find_addrs_l(grid, dims, func):
-    return (addr for addr in all_addrs(dims) if func(index_into(grid, addr)))
+@lru_cache
+def _get_offsets(n):
+    offsets = []
+    for i in range(n):
+        offsets.append([0] * i + [1] + [0] * (n - i - 1))
+        offsets.append([0] * i + [-1] + [0] * (n - i - 1))
+    return offsets
 
-def gen_grid(dims):
-    if len(dims) == 1:
-        return [0] * dims[0]
-    super_dims = tuple(dims[1:])
-    return [gen_grid(super_dims) for _ in range(dims[0])]
+def adj4(addr, dims = None):
+    has_dims = isinstance(dims, tuple)
+    if not dims:
+        n = len(addr)
+    else:
+        n = dims if has_dims else len(dims)
+    
+    addrs = (add_t(addr, offset) for offset in _get_offsets(n))
+    return addrs if not has_dims else (a for a in addrs if in_dims(a))
 
-def iter_grid(grid):
-    if not isinstance(grid, list):
-        return [grid]
-    if not isinstance(grid[0], list):
-        return grid
-    return chain(*(iter_grid(subgrid) for subgrid in grid))
+def adj8(addr, dims = None):
+    has_dims = isinstance(dims, tuple)
+    if not dims:
+        n = len(addr)
+    else:
+        n = dims if isinstance(dims, int) else len(dims)
 
-def adj(addr, dims):
-    n = len(addr)
-    offsets = chain(permutations([1] + [0] * (n - 1)), permutations([-1] + [0] * (n - 1)))
-    adjs = (add_t(addr, offset) for offset in offsets)
-    return (adj for adj in adjs if in_grid(addr, dims))
-
-def adj_diag(addr, dims):
-    offsets = (v for v in product([-1, 0, 1], repeat=len(dims)) if any(v))
-    adjs = (add_t(addr, offset) for offset in offsets)
-    return (adj for adj in adjs if in_grid(addr, dims))
+    offsets = (v for v in product([-1, 0, 1], repeat=n) if any(v))
+    addrs = (add_t(addr, offset) for offset in offsets)
+    return addrs if not has_dims else (a for a in addrs if in_dims(a))
 
 def len_euclid(addr):
     return sqrt(sum(v**2 for v in addr))
 
+def dist_euclid(a, b):
+    return len_euclid(sub_t(b, a))
+
 def len_taxi(addr):
     return sum(abs(v) for v in addr)
+
+def dist_taxi(a, b):
+    return len_taxi(sub_t(b, a))
+
+def print_grid(grid, dims, width=0, separator=", "):
+    if len(dims) == 2:
+        for y in range(dims[1]):
+            print(separator.join((str(grid[(x, y)]) if (x, y) in grid else "").rjust(width) for x in range(dims[0])))
+    elif len(dims) == 3:
+        for z in range(dims[2]):
+            print(f"layer {z}")
+            for y in range(dims[1]):
+                print("    " + separator.join((str(grid[(x, y, z)]) if (x, y, z) in grid else "").rjust(width) for x in range(dims[0])))
+    else:
+        print(f"can't print grid of len {len(dims)}")
+
+def reconstruct_path(start, node, previous_nodes):
+    path = [node]
+    while node != start:
+        node = previous_nodes[node]
+        path.append(node)
+    path.append(start)
+    return reversed(path)
+
+def djikstra(start, graph, neighbours = None, cost = None, max_value = None):
+    if not neighbours:
+        neighbours = lambda n: (a for a in adj4(n) if a in graph)
+
+    if not cost:
+        cost = lambda _, __: 1
+
+    if not max_value:
+        max_value = float("inf")
+
+    shortest_paths = {start: 0}
+    shortest_path = lambda n: shortest_paths[n] if n in shortest_paths else max_value
+
+    previous_nodes = {}
+    visited = set()
+    
+    frontier = set(neighbours(start))
+
+    while frontier:
+        min_node = min(frontier, key=shortest_path)
+        frontier.remove(min_node)
+        visited.add(min_node)
+
+        for neighbour in neighbours(min_node):
+            tentative = shortest_path(min_node) + cost(min_node, neighbour)
+            if tentative < shortest_path(neighbour):
+                shortest_paths[neighbour] = tentative
+                previous_nodes[neighbour] = min_node
+            if neighbour not in visited:
+                frontier.add(neighbour)
+
+    return (previous_nodes, shortest_paths)
+            
+def astar(start, goal, graph, neighbours = None, cost = None, heuristic = None, max_value = None):
+    if not neighbours:
+        neighbours = lambda n: (a for a in adj4(n) if a in graph)
+
+    if not heuristic:
+        g = goal
+        heuristic = lambda n: dist_taxi(n, g)
+
+    if not cost:
+        cost = lambda _, __: 1
+
+    if not max_value:
+        max_value = float("inf")
+
+    if not (isinstance(goal, types.LambdaType) or isinstance(goal, types.FunctionType)):
+        g = goal
+        goal = lambda n: n == g
+
+    previous_nodes = {}  
+
+    shortest_paths = {start: 0}
+    shortest_path = lambda n: shortest_paths[n] if n in shortest_paths else max_value
+
+    frontier = [(0, start)]
+    heapq.heapify(frontier)
+    frontier_set = { start }
+
+    while frontier:
+        _, node = heapq.heappop(frontier)
+        frontier_set.remove(node)
+
+        print(node)
+        print(goal(node))
+        if goal(node):
+            print("yooo")
+            return reconstruct_path(start, node, previous_nodes)
+        
+        for neighbour in neighbours(node):
+            tentative = shortest_path(node) + cost(node, neighbour)
+            if tentative < shortest_path(neighbour):
+                previous_nodes[neighbour] = node
+                shortest_paths[neighbour] = tentative
+                if neighbour not in frontier_set:
+                    heapq.heappush(frontier, (tentative + heuristic(neighbour), neighbour))
+                    frontier_set.add(neighbour)
+
+    return None

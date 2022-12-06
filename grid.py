@@ -198,3 +198,9 @@ def window(seq, n):
 
 def window_indices(n):
     return (list(range(i, i + n)) for i in count())
+
+def distinct(seq):
+    return list(set(seq))
+
+def transpose(seq):
+    return list(zip(*seq))

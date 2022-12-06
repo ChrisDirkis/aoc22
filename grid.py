@@ -1,5 +1,5 @@
 from functools import lru_cache
-from itertools import product
+from itertools import product, islice, count
 from collections import namedtuple
 from math import sqrt, prod
 import heapq
@@ -186,3 +186,15 @@ def astar(start, goal, graph, neighbours = None, cost = None, heuristic = None, 
                     frontier_set.add(neighbour)
 
     return None
+
+def window(seq, n):
+    it = iter(seq)
+    result = tuple(islice(it, n))
+    if len(result) == n:
+        yield result
+    for elem in it:
+        result = result[1:] + (elem,)
+        yield result
+
+def window_indices(n):
+    return (list(range(i, i + n)) for i in count())

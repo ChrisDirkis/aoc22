@@ -58,10 +58,10 @@ def adj4(addr, dims = None):
     if not dims:
         n = len(addr)
     else:
-        n = dims if has_dims else len(dims)
+        n = dims if not has_dims else len(dims)
     
     addrs = (add_t(addr, offset) for offset in _get_offsets(n))
-    return addrs if not has_dims else (a for a in addrs if in_dims(a))
+    return addrs if not has_dims else (a for a in addrs if in_dims(a, dims))
 
 def adj8(addr, dims = None):
     has_dims = isinstance(dims, tuple)
@@ -117,18 +117,22 @@ def djikstra(start, graph, neighbours = None, cost = None, max_value = None):
         max_value = float("inf")
 
     shortest_paths = {start: 0}
+
     shortest_path = lambda n: shortest_paths[n] if n in shortest_paths else max_value
 
     previous_nodes = {}
     visited = set()
     
-    frontier = set(neighbours(start))
+    for n in neighbours(start):
+        shortest_paths[n] = cost(start, n)
+        previous_nodes[n] = start
 
+    frontier = set(neighbours(start))
     while frontier:
         min_node = min(frontier, key=shortest_path)
         frontier.remove(min_node)
         visited.add(min_node)
-
+        
         for neighbour in neighbours(min_node):
             tentative = shortest_path(min_node) + cost(min_node, neighbour)
             if tentative < shortest_path(neighbour):
@@ -159,6 +163,8 @@ def astar(start, goal, graph, neighbours = None, cost = None, heuristic = None, 
 
     previous_nodes = {}  
 
+    # TODO probably pre-populate previous_nodes/shortest_paths for neighbours(start)
+
     shortest_paths = {start: 0}
     shortest_path = lambda n: shortest_paths[n] if n in shortest_paths else max_value
 
@@ -173,7 +179,6 @@ def astar(start, goal, graph, neighbours = None, cost = None, heuristic = None, 
         print(node)
         print(goal(node))
         if goal(node):
-            print("yooo")
             return reconstruct_path(start, node, previous_nodes)
         
         for neighbour in neighbours(node):

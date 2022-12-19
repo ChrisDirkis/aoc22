@@ -17,12 +17,27 @@ def to_vec(t):
     elif len(t) == 4:
         return vec4(*t)
     return t
-
+    
 def add_t(a, b):
+    if len(a) == 2:
+        return vec2(a[0] + b[0], a[1] + b[1])
+    elif len(a) == 3:
+        return vec3(a[0] + b[0], a[1] + b[1], a[2] + b[2])
     return to_vec(tuple(sum(v) for v in zip(a, b)))
 
 def sub_t(a, b):
+    if len(a) == 2:
+        return vec2(a[0] - b[0], a[1] - b[1])
+    elif len(a) == 3:
+        return vec3(a[0] - b[0], a[1] - b[1], a[2] - b[2])
     return to_vec(tuple(v1 - v2 for v1, v2 in zip(a, b)))
+
+def scale_t(a, b):
+    if len(a) == 2:
+        return vec2(a[0] * b, a[1] * b)
+    elif len(a) == 3:
+        return vec3(a[0] * b, a[1] * b, a[2] * b)
+    return to_vec(tuple(sum(v) for v in zip(a, b)))
 
 def dot_t(a, b):
     return to_vec(tuple(prod(v) for v in zip(a, b)))
@@ -63,6 +78,10 @@ def adj4(addr, dims = None):
     addrs = (add_t(addr, offset) for offset in _get_offsets(n))
     return addrs if not has_dims else (a for a in addrs if in_dims(a, dims))
 
+@lru_cache
+def _get_offsets_8(n):
+    return (v for v in product([-1, 0, 1], repeat=n) if any(v))
+    
 def adj8(addr, dims = None):
     has_dims = isinstance(dims, tuple)
     if not dims:
@@ -70,17 +89,20 @@ def adj8(addr, dims = None):
     else:
         n = dims if isinstance(dims, int) else len(dims)
 
-    offsets = (v for v in product([-1, 0, 1], repeat=n) if any(v))
-    addrs = (add_t(addr, offset) for offset in offsets)
+    addrs = (add_t(addr, offset) for offset in _get_offsets_8(n))
     return addrs if not has_dims else (a for a in addrs if in_dims(a))
 
 def len_euclid(addr):
+    if len(addr) == 2:
+        return sqrt(addr[0]**2 + addr[1]**2)
     return sqrt(sum(v**2 for v in addr))
 
 def dist_euclid(a, b):
     return len_euclid(sub_t(b, a))
 
 def len_taxi(addr):
+    if len(addr) == 2:
+        return abs(addr[0]) + abs(addr[1])
     return sum(abs(v) for v in addr)
 
 def dist_taxi(a, b):

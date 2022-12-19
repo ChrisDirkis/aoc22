@@ -86,15 +86,17 @@ def len_taxi(addr):
 def dist_taxi(a, b):
     return len_taxi(sub_t(b, a))
 
-def print_grid(grid, dims, width=0, separator=", "):
+def print_grid(grid, dims, offset = None, width=0, separator=", ", flip_y = False):
+    if not offset:
+        offset = [0] * len(dims)
     if len(dims) == 2:
-        for y in range(dims[1]):
-            print(separator.join((str(grid[(x, y)]) if (x, y) in grid else "").rjust(width) for x in range(dims[0])))
+        for y in range(dims[1]) if not flip_y else reversed(range(dims[1])):
+            print(separator.join((str(grid[(x + offset[0], y + offset[1])]) if (x + offset[0], y + offset[1]) in grid else "").rjust(width) for x in range(dims[0])))
     elif len(dims) == 3:
         for z in range(dims[2]):
             print(f"layer {z}")
-            for y in range(dims[1]):
-                print("    " + separator.join((str(grid[(x, y, z)]) if (x, y, z) in grid else "").rjust(width) for x in range(dims[0])))
+            for y in range(dims[1]) if not flip_y else reversed(range(dims[1])):
+                print("    " + separator.join((str(grid[(x + offset[0], y + offset[1], z + offset[2])]) if (x + offset[0], y + offset[1], z + offset[2]) in grid else "").rjust(width) for x in range(dims[0])))
     else:
         print(f"can't print grid of len {len(dims)}")
 

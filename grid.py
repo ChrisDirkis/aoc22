@@ -233,3 +233,18 @@ def distinct(seq):
 
 def transpose(seq):
     return list(zip(*seq))
+
+def chunk(seq, size):
+    seq = iter(seq)
+    return iter(lambda: list(islice(seq, size)), [])
+
+
+def aaline(pa, pb):
+    pa, pb = to_vec(pa), to_vec(pb)
+    length = dist_taxi(pa, pb)
+    dir = sub_t(pb, pa)
+    dir = to_vec(tuple(v / abs(v) if v != 0 else 0 for v in dir))
+    yield pa
+    for _ in range(length):
+        pa = add_t(pa, dir)
+        yield to_vec(tuple(int(v) for v in pa))

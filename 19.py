@@ -40,14 +40,12 @@ def part_1(filename):
             
             max_recipe_costs = [max(recipe[v] for recipe in blueprint) for v in range(3)]
 
-            maxg = 0
             @cache
-            def dfs(a, b, c, d, time, e, f, g, h):
-                nonlocal maxg
-                robots = [a, b, c, d]
-                stuff = [e, f, g, h]
-                maxg = max(maxg, stuff[3] + (time - 1) * robots[3])
-        
+            def dfs(ore, cla, obs, time, ore_b, cla_b, obs_b):
+                robots = [ore, cla, obs]
+                stuff = [ore_b, cla_b, obs_b]
+
+                geodes = 0
                 for i, recipe in enumerate(blueprint):
                     #funroll
                     if robots[0] == 0 and recipe[0] != 0: continue
@@ -55,14 +53,16 @@ def part_1(filename):
                     if robots[2] == 0 and recipe[2] != 0: continue
 
                     # berk
-                    if time <= 5 and i != 3: continue
+
+                    if i != 3: 
+                        if time <= 5: continue
+                        if robots[i] == max_recipe_costs[i]: continue
 
                     #funroll
-                    min_time_0 = ceil((recipe[0] - stuff[0]) / robots[0]) if recipe[0] > 0 else 0
-                    min_time_1 = ceil((recipe[1] - stuff[1]) / robots[1]) if recipe[1] > 0 else 0
-                    min_time_2 = ceil((recipe[2] - stuff[2]) / robots[2]) if recipe[2] > 0 else 0
-
-                    time_till_recipe = max(min_time_0, min_time_1, min_time_2) + 1
+                    min_times_1 = ceil((recipe[0] - stuff[0]) / robots[0]) if recipe[0] > 0 else 0
+                    min_times_2 = ceil((recipe[1] - stuff[1]) / robots[1]) if recipe[1] > 0 else 0
+                    min_times_3 = ceil((recipe[2] - stuff[2]) / robots[2]) if recipe[2] > 0 else 0
+                    time_till_recipe = max(0, min_times_1, min_times_2, min_times_3) + 1
 
                     if time_till_recipe > time: continue
 
@@ -77,18 +77,28 @@ def part_1(filename):
                     ns[1] -= recipe[1]
                     ns[2] += nr[2] * time_till_recipe
                     ns[2] -= recipe[2]
-                    ns[3] += nr[3] * time_till_recipe
-                    ns[3] -= recipe[3]
 
-                    nr[i] += 1
+                    if nr[0] == max_recipe_costs[0]:
+                        ns[0] = max_recipe_costs[0]
+                    if nr[1] == max_recipe_costs[1]:
+                        ns[1] = max_recipe_costs[1]
+                    if nr[2] == max_recipe_costs[2]:
+                        ns[2] = max_recipe_costs[2]
 
-                    dfs(nr[0], nr[1], nr[2], nr[3], nt, ns[0], ns[1], ns[2], ns[3])
-                    if time == 25:
-                        print(f"done with recipe {i}")
+                    if i == 3:
+                        geodes_this_turn = nt - 1
+                    else:
+                        nr[i] += 1
+                        geodes_this_turn = 0
 
-            dfs(1, 0, 0, 0, 25, 0, 0, 0, 0)
-            print(f"recipe {id + 1}")
-            qual += maxg * (id + 1)
+                    geodes = max(geodes, geodes_this_turn + dfs(nr[0], nr[1], nr[2], nt, ns[0], ns[1], ns[2]))
+                    # if time == 25:
+                    #     print(f"done with recipe {i}")
+                return geodes
+
+            geodes = dfs(1, 0, 0, 25, 0, 0, 0)
+            print(f"recipe {id + 1}: {geodes}")
+            qual += geodes * (id + 1)
             
         print(qual)
 
@@ -110,42 +120,36 @@ def part_2(filename):
     
         qual = 1
         for id, blueprint in enumerate(bps2[:3]):
-            maxg = 0
 
-            max_recipe_costs = [max(recipe[v] for recipe in blueprint) for v in range(4)]
+            max_recipe_costs = [max(recipe[v] for recipe in blueprint) for v in range(3)]
 
-            def dfs(a, b, c, d, time, e, f, g, h):
-                nonlocal maxg
-                robots = [a, b, c, d]
-                stuff = [e, f, g, h]
-                maxg = max(maxg, stuff[3] + time * robots[3])
+            @cache
+            def dfs(ore, cla, obs, time, ore_b, cla_b, obs_b):
+                
+                # berk
+                if time < 20 and ore_b < max_recipe_costs[0]: return 0 
 
+                robots = [ore, cla, obs]
+                stuff = [ore_b, cla_b, obs_b]
+
+                geodes = 0
                 for i, recipe in enumerate(blueprint):
                     #funroll
                     if robots[0] == 0 and recipe[0] != 0: continue
                     if robots[1] == 0 and recipe[1] != 0: continue
                     if robots[2] == 0 and recipe[2] != 0: continue
-                    if robots[3] == 0 and recipe[3] != 0: continue
 
-                    # skip machines for things we definitely have enough of
-                    #if stuff[i] > time * blueprint[3][i]:
-                    #    continue
-                    if i == 0 and time < 20: continue
-                    # if i == 1 and time < 10: continue
-                    # if i == 3 and time > 15: continue
-                    if i != 3 and time < 6: continue
-
-                    if i != 3 and robots[i] > max_recipe_costs[i]:
-                        continue
+                    # berk
+                    if time < 20 and i == 0: continue 
+                    if i != 3: 
+                        if time <= 4: continue
+                        if robots[i] == max_recipe_costs[i]: continue
 
                     #funroll
-
-                    min_time_0 = ceil((recipe[0] - stuff[0]) / robots[0]) if recipe[0] > 0 else 0
-                    min_time_1 = ceil((recipe[1] - stuff[1]) / robots[1]) if recipe[1] > 0 else 0
-                    min_time_2 = ceil((recipe[2] - stuff[2]) / robots[2]) if recipe[2] > 0 else 0
-                    min_time_3 = ceil((recipe[3] - stuff[3]) / robots[3]) if recipe[3] > 0 else 0
-
-                    time_till_recipe = max(min_time_0, min_time_1, min_time_2, min_time_3) + 1
+                    min_times_1 = ceil((recipe[0] - stuff[0]) / robots[0]) if recipe[0] > 0 else 0
+                    min_times_2 = ceil((recipe[1] - stuff[1]) / robots[1]) if recipe[1] > 0 else 0
+                    min_times_3 = ceil((recipe[2] - stuff[2]) / robots[2]) if recipe[2] > 0 else 0
+                    time_till_recipe = max(0, min_times_1, min_times_2, min_times_3) + 1
 
                     if time_till_recipe > time: continue
 
@@ -160,18 +164,28 @@ def part_2(filename):
                     ns[1] -= recipe[1]
                     ns[2] += nr[2] * time_till_recipe
                     ns[2] -= recipe[2]
-                    ns[3] += nr[3] * time_till_recipe
-                    ns[3] -= recipe[3]
 
-                    nr[i] += 1
+                    if nr[0] == max_recipe_costs[0]:
+                        ns[0] = max_recipe_costs[0]
+                    if nr[1] == max_recipe_costs[1]:
+                        ns[1] = max_recipe_costs[1]
+                    if nr[2] == max_recipe_costs[2]:
+                        ns[2] = max_recipe_costs[2]
 
-                    dfs(nr[0], nr[1], nr[2], nr[3], nt, ns[0], ns[1], ns[2], ns[3])
+                    if i == 3:
+                        geodes_this_turn = nt - 1
+                    else:
+                        nr[i] += 1
+                        geodes_this_turn = 0
+
+                    geodes = max(geodes, geodes_this_turn + dfs(nr[0], nr[1], nr[2], nt, ns[0], ns[1], ns[2]))
                     if time == 32:
                         print(f"done with recipe {i}")
+                return geodes
 
-            dfs(1, 0, 0, 0, 32, 0, 0, 0, 0)
-            print(f"recipe {id + 1} best is {maxg}")
-            qual *= maxg
+            geodes = dfs(1, 0, 0, 32, 0, 0, 0)
+            print(f"recipe {id + 1}: {geodes}")
+            qual *= geodes
             
         print(qual)
 

@@ -42,11 +42,31 @@ def scale_t(a, b):
 def dot_t(a, b):
     return to_vec(tuple(prod(v) for v in zip(a, b)))
 
+def lt_t(a, b):
+    if len(a) == 2:
+        return a[0] < b[0] or a[1] < b[1]
+    elif len(a) == 3:
+        return a[0] < b[0] or a[1] < b[1] or a[2] < b[2]
+    return any(v1 < v2 for v1, v2 in zip(a, b))
+
+def gt_t(a, b):
+    if len(a) == 2:
+        return a[0] > b[0] or a[1] > b[1]
+    elif len(a) == 3:
+        return a[0] > b[0] or a[1] > b[1] or a[2] > b[2]
+    return any(v1 > v2 for v1, v2 in zip(a, b))
+
 def in_dims(addr, dims):
     return all(v >= 0 and v < dims[i] for i, v in enumerate(addr))
 
 def in_grid(addr, grid):
     return addr in grid
+
+def minmax_grid(grid):
+    dims = len(next(iter(grid)))
+    mi = to_vec(tuple(min(grid, key = lambda v: v[i])[i] for i in range(dims)))
+    ma = to_vec(tuple(max(grid, key = lambda v: v[i])[i] for i in range(dims)))
+    return mi, ma
 
 def all_addrs(dims):
     return (to_vec(v) for v in product(*(list(range(v) for v in dims))))

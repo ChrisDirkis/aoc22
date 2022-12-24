@@ -142,6 +142,16 @@ def print_grid(grid, dims, offset = None, width=0, separator=", ", flip_y = Fals
     else:
         print(f"can't print grid of len {len(dims)}")
 
+
+def auto_print_grid_2d(grid):
+    mi, ma = minmax_grid(grid)
+
+    for j in range(mi.y, ma.y + 1):
+        for i in range(mi.x, ma.x + 1):
+            print(grid[vec2(i, j)] if vec2(i, j) in grid else ".", end="")
+        print()
+    print()
+
 def reconstruct_path(start, node, previous_nodes):
     path = [node]
     while node != start:
@@ -220,8 +230,8 @@ def astar(start, goal, graph, neighbours = None, cost = None, heuristic = None, 
         _, node = heapq.heappop(frontier)
         frontier_set.remove(node)
 
-        print(node)
-        print(goal(node))
+        #print(node)
+        #print(goal(node))
         if goal(node):
             return reconstruct_path(start, node, previous_nodes)
         
